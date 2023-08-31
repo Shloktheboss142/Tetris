@@ -14,101 +14,46 @@
 
 import "./style.css";
 
-import { fromEvent, interval, merge } from "rxjs";
-import { map, filter, scan, tap } from "rxjs/operators";
+import { Observable, fromEvent, interval, merge, zip } from "rxjs";
+import { map, filter, scan, tap, switchMap, takeUntil, take } from "rxjs/operators";
+import { Viewport, Constants, Block, Obstacles, Tetriminos, Key, State} from "./types";
+import { RNG, createSvgElement, createNewBlock} from "./util";
 
 /** Constants */
 
-const Viewport = {
-  CANVAS_WIDTH: 200,
-  CANVAS_HEIGHT: 400,
-  PREVIEW_WIDTH: 160,
-  PREVIEW_HEIGHT: 80,
-} as const;
-
-const Constants = {
-  TICK_RATE_MS: 500,
-  GRID_WIDTH: 10,
-  GRID_HEIGHT: 20,
-} as const;
-
-const Block = {
-  WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
-  HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
-};
 
 /** User input */
 
-type Key = "KeyS" | "KeyA" | "KeyD";
-
-type Event = "keydown" | "keyup" | "keypress";
-
 /** Utility functions */
 
-const tetriminos = [
-  // // I Tetrimino
-  // { blocks: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }], color: 'cyan' },
-  // // J Tetrimino
-  // { blocks: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }], color: 'blue' },
-  // // L Tetrimino
-  // { blocks: [{ x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }], color: 'orange' },
-  // O Tetrimino
-  { blocks: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }], color: 'yellow' },
-  // T Tetrimino
-  { blocks: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }], color: 'purple' },
-]
+const rng = new RNG(63987543); // Seed with an initial value
+
+// Generate a pseudorandom integer between 1 and 6 (inclusive)
+
+
+
+
+
+// const 
 
 /** State processing */
 
-const createSvgElement = (
-  namespace: string | null,
-  name: string,
-  props: Record<string, string> = {}
-) => {
-  const elem = document.createElementNS(namespace, name) as SVGElement;
-  Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
-  return elem;
-};
 
 
 
-function createNewBlock(): SVGElement[] {
-  const block = tetriminos[1];
-  const hehe: SVGElement[] = [];
-  const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
-    HTMLElement;
-  block.blocks.forEach(element => {
-    const cube = createSvgElement(svg.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * element.x}`,
-      y: `${Block.HEIGHT * element.y}`,
-      style: `fill: ${block.color}`,
-    });
-    hehe.push(cube);
-  })
-  return hehe;
-}
 
-type State = Readonly<{
-  gameEnd: boolean;
-  currentBlock: SVGElement[];
-  nextBlock: SVGElement[];
-  // grid: Grid;
-  score: number;
-  level: number;
-  highScore: number;
-}>;
+
 
 const initialState: State = {
   gameEnd: false,
-  currentBlock: createNewBlock(),
-  nextBlock: createNewBlock(),
-  // grid: createGrid(),
+  currentBlock: createNewBlock(rng.nextInt(0, Tetriminos.length - 1)),
+  nextBlock: createNewBlock(rng.nextInt(0, Tetriminos.length - 1)),
   score: 0,
-  level: 0,
+  level: 1,
   highScore: 0,
-} as const;
+  rotation: 0,
+  existingBlocks: [] as SVGElement[],
+};
 
 const checkGameEnd = (s: State) => {
   return s.currentBlock.some(element => {
@@ -153,15 +98,6 @@ const hide = (elem: SVGGraphicsElement) =>
  * @param props Properties to set on the SVG element
  * @returns SVG element
  */
-// const createSvgElement = (
-//   namespace: string | null,
-//   name: string,
-//   props: Record<string, string> = {}
-// ) => {
-//   const elem = document.createElementNS(namespace, name) as SVGElement;
-//   Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
-//   return elem;
-// };
 
 /**
  * This is the function called on page load. Your main game loop
@@ -189,7 +125,7 @@ export function main() {
 
   /** User input */
 
-  const existingBlocks: SVGElement[] = [];
+  // const s.existingBlocks: SVGElement[] = [];
 
   const key$ = fromEvent<KeyboardEvent>(document, "keypress");
 
@@ -199,6 +135,8 @@ export function main() {
     const left$ = fromKey("KeyA", 'left');
     const right$ = fromKey("KeyD", 'right');
     const down$ = fromKey("KeyS", 'down');
+    const rotate$ = fromKey("KeyW", 'rotate');
+    const restart$ = fromKey("Space", 'restart');
 
 
   /** Observables */
@@ -233,38 +171,33 @@ export function main() {
     });
   }
 
-  // const checkCollision = (s: State) => {
-  //   const newBlock = s.currentBlock.map(element => {
-  //     const y = Number(element.getAttribute('y'));
-  //     element.setAttribute('y', `${y + Block.HEIGHT}`);
-  //     return element;
-  //   });d
-  //   return {...s, currentBlock: newBlock};
-  // }
-
   function removeFilledRows(s: State) {
     const score: number[] = [s.score];
+    const highScore: number[] = [s.highScore];
     const rows: number[] = [];
-    existingBlocks.forEach(element => {
+    const level: number = s.level;
+    s.existingBlocks.map(element => {
       const y = Number(element.getAttribute('y'));
       if (!rows.includes(y)) {
         rows.push(y);
       }
     });
     rows.sort((a, b) => a - b);
-    rows.forEach(row => {
-      const rowBlocks = existingBlocks.filter(element => {
+    rows.map(row => {
+      const rowBlocks = s.existingBlocks.filter(element => {
         const y = Number(element.getAttribute('y'));
         return y === row;
       });
       if (rowBlocks.length === Constants.GRID_WIDTH) {
         score.push(score[score.length - 1] + 100)
-        
-        rowBlocks.forEach(element => {
+        if (score[score.length - 1] > highScore[highScore.length - 1]) {
+          highScore.push(score[score.length - 1]);
+        }
+        rowBlocks.map(element => {
           element.remove();
-          existingBlocks.splice(existingBlocks.indexOf(element), 1); // Remove from the existingBlocks array
+          s.existingBlocks.splice(s.existingBlocks.indexOf(element), 1); // Remove from the s.existingBlocks array
         });
-        existingBlocks.forEach(element => {
+        s.existingBlocks.map(element => {
           const y = Number(element.getAttribute('y'));
           if (y < row) {
             const newY = y + Block.HEIGHT;
@@ -273,34 +206,29 @@ export function main() {
         });
       }
     });
-    console.log(score);
-    return score[score.length - 1];
+    const newScore = score[score.length - 1];
+    const newHighScore = highScore[highScore.length - 1];
+    const newLevel = Math.floor((newScore / 300) + 1);
+    return [newScore, newHighScore, newLevel];
   }
-
 
   const move = (s: State, movement: number) => {
     const newBlock = s.currentBlock;
-    
-    if (movement === 1 && canMoveHorizontally(s.currentBlock, Block.WIDTH, existingBlocks) && !checkCollision(s.currentBlock, existingBlocks)) {
+
+    if ((movement === 1 || movement === -1) && canMoveHorizontally(s.currentBlock, movement * Block.WIDTH, s.existingBlocks) && !checkCollision(s.currentBlock, s.existingBlocks)) {
       const newBlock = s.currentBlock.map(element => {
-        const x = Number(element.getAttribute("x")) + Block.WIDTH;
+        const x = Number(element.getAttribute("x")) + movement * Block.WIDTH;
         element.setAttribute("x", `${x}`);
         return element;
       });
-    } else if (movement === -1 && canMoveHorizontally(s.currentBlock, -Block.WIDTH, existingBlocks) && !checkCollision(s.currentBlock, existingBlocks)) {
-      const newBlock = s.currentBlock.map(element => {
-        const x = Number(element.getAttribute("x")) - Block.WIDTH;
-        element.setAttribute("x", `${x}`);
-        return element;
-      });
-    } else if (movement === 0 && canMoveVertically(s.currentBlock, Block.HEIGHT) && !checkCollision(s.currentBlock, existingBlocks)) {
+    } else if (movement === 0 && canMoveVertically(s.currentBlock, Block.HEIGHT) && !checkCollision(s.currentBlock, s.existingBlocks)) {
       const newBlock = s.currentBlock.map(element => {
         const y = Number(element.getAttribute("y")) + Block.HEIGHT;
         element.setAttribute("y", `${y}`);
         return element;
       });
     } else {
-      const newBlock = s.currentBlock; // No valid movement, keep the block unchanged
+      const newBlock = s.currentBlock;
     }
   
     return { ...s, currentBlock: newBlock};
@@ -309,8 +237,27 @@ export function main() {
   /** Determines the rate of time steps */
   const tick$ = interval(Constants.TICK_RATE_MS);
 
+  const restart = (s: State) => {
+    s.currentBlock.map(element => {
+      element.remove();
+    }
+    );
+    s.nextBlock.map(element => {
+      element.remove();
+    }
+    );
+    s.existingBlocks.map(element => {
+      element.remove();
+    });
+    const oldState = s;
+    const newCurrentBlock = createNewBlock(rng.nextInt(0, Tetriminos.length - 1));
+    const newNextBlock = createNewBlock(rng.nextInt(0, Tetriminos.length - 1));
+    const newState = {...initialState, currentBlock: newCurrentBlock,highScore: oldState.highScore, existingBlocks: [] as SVGElement[], score: 0, level: 1, nextBlock: newNextBlock};
+    return newState;
+  }
+
   const tick = (s: State) => {
-    if (canMoveVertically(s.currentBlock, Block.HEIGHT) && !checkCollision(s.currentBlock, existingBlocks)) {
+    if (canMoveVertically(s.currentBlock, Block.HEIGHT) && !checkCollision(s.currentBlock, s.existingBlocks)) {
       const newBlock = s.currentBlock.map(element => {
         const y = Number(element.getAttribute("y")) + Block.HEIGHT;
         element.setAttribute("y", `${y}`);
@@ -319,12 +266,68 @@ export function main() {
       return { ...s, currentBlock: newBlock, gameEnd: checkGameEnd(s)};
     } 
     else {
-      existingBlocks.push(...s.currentBlock);
-      const newBlock = createNewBlock(); // No valid movement, keep the block unchanged
-      return { ...s, currentBlock: newBlock, gameEnd: checkGameEnd(s)};
+      s.existingBlocks.push(...s.currentBlock);
+      const newCurrentBlock = s.nextBlock
+      const newNextBlock = createNewBlock(rng.nextInt(0, Tetriminos.length - 1));
+      return { ...s, currentBlock: newCurrentBlock, nextBlock: newNextBlock, gameEnd: checkGameEnd(s)};
     }
+  }
 
-    // return { ...s, currentBlock: newBlock };
+  const rotate = (s: State) => {
+    const currentBlock = s.currentBlock;
+    const centerX = currentBlock[2].getAttribute("x");
+    const centerY = currentBlock[2].getAttribute("y");
+  
+    const newBlockPositions = currentBlock.map(element => {
+      const relativeX = Number(element.getAttribute("x")) - Number(centerX);
+      const relativeY = Number(element.getAttribute("y")) - Number(centerY);
+      const newX = Number(centerX) + relativeY;
+      const newY = Number(centerY) - relativeX;
+      return { newX, newY };
+    });
+  
+    const validRotation = newBlockPositions.every(({ newX, newY }) => {
+      return (
+        newX >= 0 &&
+        newX + Block.WIDTH <= Viewport.CANVAS_WIDTH &&
+        newY >= 0 &&
+        newY + Block.HEIGHT <= Viewport.CANVAS_HEIGHT &&
+        !s.existingBlocks.some(block => {
+          const existingX = Number(block.getAttribute("x"));
+          const existingY = Number(block.getAttribute("y"));
+          return newX === existingX && newY === existingY;
+        })
+      );
+    });
+  
+    if (validRotation) {
+      const newBlock = currentBlock.map((element, index) => {
+        element.setAttribute("x", `${newBlockPositions[index].newX}`);
+        element.setAttribute("y", `${newBlockPositions[index].newY}`);
+        return element;
+      });
+  
+      return { ...s, currentBlock: newBlock };
+    }
+  
+    return s;
+  };
+
+  const placeObstacles = (s: State, level: number) => {
+    const addedObstacles: SVGElement[] = []
+    console.log(((level - 1) % (Obstacles.length)));
+    Obstacles[((level - 1) % (Obstacles.length))].map(element => {
+      const cube = createSvgElement(svg.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH * element.x}`,
+        y: `${Block.HEIGHT * element.y}`,
+        style: `fill: gray`,
+      });
+      svg.appendChild(cube);
+      addedObstacles.push(cube);
+    });
+    return addedObstacles;
   }
 
   /**
@@ -336,76 +339,61 @@ export function main() {
    */
   const render = (s: State) => {
     scoreText.innerHTML = `${s.score}`;
-    s.currentBlock.forEach(element => {
+    highScoreText.innerHTML = `${s.highScore}`;
+    levelText.innerHTML = `${s.level}`;
+    s.currentBlock.map(element => {
       svg.appendChild(element);
     }
     );
-    // Add blocks to the main grid canvas
-    // const cube = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: "0",
-    //   y: "0",
-    //   style: "fill: green",
-    // });
-    // svg.appendChild(cube);
-    // const cube2 = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * (3 - 1)}`,
-    //   y: `${Block.HEIGHT * (20 - 1)}`,
-    //   style: "fill: red",
-    // });
-    // svg.appendChild(cube2);
-    // const cube3 = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * (4 - 1)}`,
-    //   y: `${Block.HEIGHT * (20 - 1)}`,
-    //   style: "fill: red",
-    // });
-    // svg.appendChild(cube3);
-
-    // Add a block to the preview canvas
-    const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * 2}`,
-      y: `${Block.HEIGHT}`,
-      style: "fill: green",
+    s.nextBlock.map(element => {
+      preview.appendChild(element);
     });
-    preview.appendChild(cubePreview);
   };
 
   render(initialState);
 
-  const source$ = merge(tick$, left$, right$, down$)
+  const source$ = merge(tick$, left$, right$, down$, rotate$, restart$)
     .pipe(scan((s: State, action: string | number) => {
-      // console.log(action);
-      const score = removeFilledRows(s)
-      // if (score !== s.score) {
-      //   console.log(s.score);
-      //   return {...s, score: score};
-      // }
-      // const updatedState: STate = s;
+      const newExistingBlocks: SVGElement[] = [];
+      const [newScore, newHighScore, newLevel] = removeFilledRows(s)
+      if (s.level !== newLevel) {
+        placeObstacles(s, newLevel).map(element => {
+          newExistingBlocks.push(element);
+        } 
+        );
+      }
+
+      const oldExistingBlocks = s.existingBlocks;
+
+      // console.log(s.existingBlocks);
+      
       switch (action) {
         case('right'):
-          return {...move(s, 1), score: score}
+          return {...move(s, 1), score: newScore, highScore: newHighScore, level: newLevel, existingBlocks: oldExistingBlocks.concat(newExistingBlocks)}
         case('left'):
-          return {...move(s, -1), score: score}
+          return {...move(s, -1), score: newScore, highScore: newHighScore, level: newLevel, existingBlocks: oldExistingBlocks.concat(newExistingBlocks)}
         case('down'):
-          return {...move(s, 0), score: score}
+          return {...move(s, 0), score: newScore, highScore: newHighScore, level: newLevel, existingBlocks: oldExistingBlocks.concat(newExistingBlocks)}
+        case('rotate'):
+          return {...rotate(s), score: newScore, highScore: newHighScore, level: newLevel, existingBlocks: oldExistingBlocks.concat(newExistingBlocks)}
+        case('restart'):
+          if (s.gameEnd) {
+            return restart(s);
+          }
         default:
-          return {...tick(s), score: score}
+          if (!s.gameEnd) {
+            return {...tick(s), score: newScore, highScore: newHighScore, level: newLevel, existingBlocks: oldExistingBlocks.concat(newExistingBlocks)}
+          } else {
+            return s;
+          }
       }
       
-      }, initialState),tap(s => render(s))).subscribe((s: State) => {
-      // console.log();
-      // render(s);
+      }, initialState),
+      tap(s => render(s)
+      )).subscribe(async (s: State) => {
 
       if (s.gameEnd) {
         show(gameover);
-        source$.unsubscribe();
       } else {
         hide(gameover);
       }
