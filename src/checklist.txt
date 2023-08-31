@@ -1,0 +1,12 @@
+TODO            STATUS
+main
+types           DONE
+util            DONE
+state           DONE
+view            DONE
+observable      DONE
+
+canMoveHorizontally
+canMoveVertically
+checkCollision
+removeFilledRows
