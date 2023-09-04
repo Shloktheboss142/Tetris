@@ -20,16 +20,20 @@ import { initialState, moveBlock, rotateBlock, restart, gameTick, newUpdates } f
 import { gameover, render, show, hide} from "./view";
 import { left$, right$, down$, rotate$, restart$, tick$} from "./observable";
 
-
-function main() {
-  render(initialState);
-
+/**
+ * The main function that contains the main game loop.
+ */
+export const main = () => {
+  // Main observable that combines all the other observables
   const source$ = merge(tick$, left$, right$, down$, rotate$, restart$).pipe(
     scan((s: State, action: string | number) => {
+
+      // Getting the new score, high score, level and existing blocks
       const [newScore, newHighScore, newLevel, newExistingBlocks] =
         newUpdates(s);
       const oldExistingBlocks = s.existingBlocks;
 
+      // Switch statement to check which action is triggered
       switch (action) {
         case "right":
           return {
@@ -66,8 +70,11 @@ function main() {
         case "restart":
           if (s.gameEnd) {
             return restart(s);
+          } else {
+            return s;
           }
         default:
+          // If no action is triggered, the game will continue or end depending on the gameEnd state
           if (!s.gameEnd) {
             return {
               ...gameTick(s),
@@ -83,6 +90,7 @@ function main() {
     }, initialState)
   );
 
+  // Subscribe to the source observable
   source$.subscribe((s: State) => {
     render(s);
     if (s.gameEnd) {

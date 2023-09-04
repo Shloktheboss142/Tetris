@@ -1,8 +1,12 @@
-import { Block, BlockOptions, State } from "./types";
+import { Block, BlockOptions } from "./types";
 import { svg } from "./view";
 
-export { RNG, checkGameEnd, rng, removeDuplicates, createSvgElement, createNewBlock};
+export { RNG, rng, removeDuplicates, createSvgElement, createNewBlock};
 
+/**
+ * Random Number Generator class
+ * Source: FIT2102 Tutorial 4
+ */
 class RNG {
   private static m = 0x80000000; // 2**31
   private static a = 2875461234;
@@ -27,19 +31,24 @@ class RNG {
 
 const rng = new RNG(63987543);
 
-const checkGameEnd = (s: State): boolean => {
-  return s.currentBlock.some(block => {
-    const y = Number(block.getAttribute("y"));
-    return y === 0;
-  });
-};
-
+/**
+ * Helper function to remove duplicates from an array
+ * @param originalRow The array to remove duplicates from
+ * @returns The input array with no duplicates
+ */
 const removeDuplicates = (originalRow: number[]): number[] => {
   return originalRow.filter((value, index) => {
     return originalRow.indexOf(value) === index;
   });
 };
 
+/**
+ * Function to create a new SVG element
+ * @param namespace The namespace of the SVG element
+ * @param name The name of the SVG element
+ * @param props The properties of the SVG element
+ * @returns The new SVG element
+ */
 const createSvgElement = (
   namespace: string | null,
   name: string,
@@ -50,6 +59,11 @@ const createSvgElement = (
   return elem;
 };
 
+/**
+ * Function to create a new block based on the block number
+ * @param blockNumber The block number of the block to create from the BlockOptions array
+ * @returns The new block as an array of SVG elements
+ */
 const createNewBlock = (blockNumber: number = 0): SVGElement[] => {
   const blockDetails = BlockOptions[blockNumber];
   const fullBlock: SVGElement[] = [];
