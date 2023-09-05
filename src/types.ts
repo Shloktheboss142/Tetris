@@ -16,7 +16,6 @@ const Viewport = {
     WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
     HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
   },
-
   // Obstacles that will be generated
   Obstacles = [
     [
@@ -58,7 +57,6 @@ const Viewport = {
       { x: 9, y: 13 },
     ],
   ],
-
   // Block options for the blocks that will be generated
   BlockOptions = [
     // {
@@ -97,9 +95,9 @@ const Viewport = {
     {
       positions: [
         { x: 1, y: 0 },
-        { x: 2, y: 0 },
         { x: 0, y: 1 },
         { x: 1, y: 1 },
+        { x: 2, y: 0 },
       ],
       color: "#3DCA31",
     }, // S

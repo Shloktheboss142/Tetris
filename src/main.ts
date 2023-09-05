@@ -16,9 +16,16 @@ import "./style.css";
 import { merge } from "rxjs";
 import { scan } from "rxjs/operators";
 import { State } from "./types";
-import { initialState, moveBlock, rotateBlock, restart, gameTick, newUpdates } from "./state";
-import { gameover, render, show, hide} from "./view";
-import { left$, right$, down$, rotate$, restart$, tick$} from "./observable";
+import {
+  initialState,
+  moveBlock,
+  rotateBlock,
+  restart,
+  gameTick,
+  newUpdates,
+} from "./state";
+import { gameover, render, show, hide } from "./view";
+import { left$, right$, down$, rotate$, restart$, tick$ } from "./observable";
 
 /**
  * The main function that contains the main game loop.
@@ -27,7 +34,6 @@ export const main = () => {
   // Main observable that combines all the other observables
   const source$ = merge(tick$, left$, right$, down$, rotate$, restart$).pipe(
     scan((s: State, action: string | number) => {
-
       // Getting the new score, high score, level and existing blocks
       const [newScore, newHighScore, newLevel, newExistingBlocks] =
         newUpdates(s);
@@ -99,7 +105,7 @@ export const main = () => {
       hide(gameover);
     }
   });
-}
+};
 
 // The following simply runs your main function on window load.  Make sure to leave it in place.
 if (typeof window !== "undefined") {

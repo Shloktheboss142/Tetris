@@ -1,7 +1,7 @@
 import { Block, BlockOptions } from "./types";
 import { svg } from "./view";
 
-export { RNG, rng, removeDuplicates, createSvgElement, createNewBlock};
+export { RNG, rng, removeDuplicates, createSvgElement, createNewBlock };
 
 /**
  * Random Number Generator class
@@ -29,7 +29,7 @@ class RNG {
   }
 }
 
-const rng = new RNG(63987543);
+const rng = new RNG(10072005);
 
 /**
  * Helper function to remove duplicates from an array
@@ -67,7 +67,7 @@ const createSvgElement = (
 const createNewBlock = (blockNumber: number = 0): SVGElement[] => {
   const blockDetails = BlockOptions[blockNumber];
   const fullBlock: SVGElement[] = [];
-    blockDetails.positions.map((block) => {
+  blockDetails.positions.map((block) => {
     const cube = createSvgElement(svg.namespaceURI, "rect", {
       height: `${Block.HEIGHT}`,
       width: `${Block.WIDTH}`,
@@ -78,4 +78,4 @@ const createNewBlock = (blockNumber: number = 0): SVGElement[] => {
     fullBlock.push(cube);
   });
   return fullBlock;
-}
+};

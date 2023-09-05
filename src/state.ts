@@ -1,6 +1,18 @@
-import { Viewport, Constants, Block, BlockOptions, State } from "./types";
-import {rng, removeDuplicates, createNewBlock } from "./util";
-import { placeObstacles } from "./view";
+import {
+  Viewport,
+  Constants,
+  Block,
+  BlockOptions,
+  State,
+  Obstacles,
+} from "./types";
+import {
+  rng,
+  removeDuplicates,
+  createNewBlock,
+  createSvgElement,
+} from "./util";
+import { svg } from "./view";
 
 export { initialState, moveBlock, gameTick, rotateBlock, restart, newUpdates };
 export type { State };
@@ -27,12 +39,12 @@ const newUpdates = (s: State): [number, number, number, SVGElement[]] => {
   const newExistingBlocks: SVGElement[] = [];
   const [newScore, newHighScore, newLevel] = clearRows(s);
   if (s.level !== newLevel) {
-    placeObstacles(newLevel).map((element) => {
+    placeObstacles(s, newLevel).map((element) => {
       newExistingBlocks.push(element);
     });
   }
   return [newScore, newHighScore, newLevel, newExistingBlocks];
-}; 
+};
 
 /**
  * Function to check if the block can move in the x-axis
@@ -42,7 +54,8 @@ const newUpdates = (s: State): [number, number, number, SVGElement[]] => {
  */
 const xAxisMovement = (s: State, direction: number): boolean => {
   return s.currentBlock.every((eachBlock) => {
-    const newXPos = Number(eachBlock.getAttribute("x")) + direction * Block.WIDTH;
+    const newXPos =
+      Number(eachBlock.getAttribute("x")) + direction * Block.WIDTH;
     return (
       newXPos + Block.WIDTH <= Viewport.CANVAS_WIDTH &&
       newXPos >= 0 &&
@@ -58,7 +71,11 @@ const xAxisMovement = (s: State, direction: number): boolean => {
  * @param eachBlock The block to check if it can move in the x-axis
  * @returns True if the block can move in the x-axis, false otherwise
  */
-const xAxisMovementAux = (s: State, newXPos: number, eachBlock: SVGElement): boolean => {
+const xAxisMovementAux = (
+  s: State,
+  newXPos: number,
+  eachBlock: SVGElement
+): boolean => {
   return !s.existingBlocks.some((block) => {
     return (
       newXPos === Number(block.getAttribute("x")) &&
@@ -77,18 +94,25 @@ const yAxisMovement = (s: State): boolean => {
     const newYPos = Number(eachBlock.getAttribute("y")) + Block.HEIGHT;
     return newYPos >= 0 && newYPos + Block.HEIGHT <= Viewport.CANVAS_HEIGHT;
   });
-}
+};
 
 /**
  * Function to check if the block is colliding with another block
  * @param s The current state of the game
  * @returns  True if the block is colliding with another block, false otherwise
  */
-const collisionCheck = (s: State): boolean => {
-  return s.currentBlock.some((block) => {
-    return collisionCheckAux(s, Number(block.getAttribute("x")), Number(block.getAttribute("y")));
+export const collisionCheck = (
+  s: State,
+  checkBlock: SVGElement[] = s.currentBlock
+): boolean => {
+  return checkBlock.some((block) => {
+    return collisionCheckAux(
+      s,
+      Number(block.getAttribute("x")),
+      Number(block.getAttribute("y"))
+    );
   });
-}
+};
 
 /**
  * Helper function for collisionCheck which makes the code more readable
@@ -97,11 +121,18 @@ const collisionCheck = (s: State): boolean => {
  * @param newYPos The new y position of the block
  * @returns True if the block is colliding with another block, false otherwise
  */
-const collisionCheckAux = (s: State, newXPos: number, newYPos: number): boolean => {
+const collisionCheckAux = (
+  s: State,
+  newXPos: number,
+  newYPos: number
+): boolean => {
   return s.existingBlocks.some((otherBlock) => {
-     return Number(otherBlock.getAttribute("x")) == newXPos && Number(otherBlock.getAttribute("y")) == newYPos + Block.HEIGHT;
+    return (
+      Number(otherBlock.getAttribute("x")) == newXPos &&
+      Number(otherBlock.getAttribute("y")) == newYPos + Block.HEIGHT
+    );
   });
-}
+};
 
 /**
  * Function to clear rows if they are full
@@ -128,7 +159,6 @@ const clearRows = (s: State): [number, number, number] => {
       return Number(element.getAttribute("y")) === eachRow;
     });
     if (rowBlocks.length === Constants.GRID_WIDTH) {
-
       // Update the score, high score and level
       score.push(score[score.length - 1] + 100);
       if (score[score.length - 1] > highScore[highScore.length - 1]) {
@@ -224,7 +254,7 @@ const moveBlockDown = (s: State): SVGElement[] => {
     block.setAttribute("y", `${newYPos}`);
     return block;
   });
-}
+};
 
 /**
  * Function to rotate the block
@@ -265,7 +295,10 @@ const rotateBlock = (s: State): State => {
  * @param newBlockPositions The new positions of the block after rotation
  * @returns True if the block can be rotated, false otherwise
  */
-const validRotation = (s: State, newBlockPositions: { newXPos: number; newYPos: number }[]): boolean => {
+const validRotation = (
+  s: State,
+  newBlockPositions: { newXPos: number; newYPos: number }[]
+): boolean => {
   return newBlockPositions.every(({ newXPos, newYPos }) => {
     return (
       newXPos >= 0 &&
@@ -297,7 +330,9 @@ const restart = (s: State): State => {
     element.remove();
   });
   const oldState = s;
-  const newCurrentBlock = createNewBlock(rng.nextInt(0, BlockOptions.length - 1));
+  const newCurrentBlock = createNewBlock(
+    rng.nextInt(0, BlockOptions.length - 1)
+  );
   const newNextBlock = createNewBlock(rng.nextInt(0, BlockOptions.length - 1));
   const newState = {
     ...initialState,
@@ -318,7 +353,35 @@ const restart = (s: State): State => {
  * @returns True if the game has ended, false otherwise
  */
 const checkGameEnd = (s: State): boolean => {
-  return s.currentBlock.some(block => {
+  return s.currentBlock.some((block) => {
     return Number(block.getAttribute("y")) === 0;
   });
+};
+
+/**
+ * Function to place the obstacles on the canvas based on the level
+ * @param s The current state of the game
+ * @param level The current level of the game to determine the obstacles to place
+ * @returns An array of SVG elements that are the obstacles
+ */
+const placeObstacles = (s: State, level: number): SVGElement[] => {
+  const addedObstacles: SVGElement[] = [];
+
+  // Choose the obstacles based on the level
+  Obstacles[(level - 1) % Obstacles.length].map((block) => {
+    const newBlock = createSvgElement(svg.namespaceURI, "rect", {
+      height: `${Block.HEIGHT}`,
+      width: `${Block.WIDTH}`,
+      x: `${Block.WIDTH * block.x}`,
+      y: `${Block.HEIGHT * block.y}`,
+      style: `fill: white`,
+    });
+
+    // Check if the obstacle can be placed and place it if it can
+    if (!collisionCheck(s, [newBlock])) {
+      svg.appendChild(newBlock);
+      addedObstacles.push(newBlock);
+    }
+  });
+  return addedObstacles;
 };

@@ -1,7 +1,7 @@
 import { filter, fromEvent, interval, map } from "rxjs";
 import { Constants, Key } from "./types";
 
-export { fromKey, key$, left$, right$, down$, rotate$, restart$, tick$}
+export { fromKey, key$, left$, right$, down$, rotate$, restart$, tick$ };
 
 /**
  * Observable that emits a KeyboardEvent

@@ -1,13 +1,15 @@
 import { State } from "./state";
-import { Block, Obstacles, Viewport } from "./types";
-import { createSvgElement } from "./util";
+import { Viewport } from "./types";
 
-export { render, svg, gameover, container, show, hide, placeObstacles};
+export { render, svg, gameover, container, show, hide };
 
 // Initialise the SVG canvas and preview
-const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement & HTMLElement;
-const preview = document.querySelector("#svgPreview") as SVGGraphicsElement & HTMLElement;
-const gameover = document.querySelector("#gameOver") as SVGGraphicsElement & HTMLElement;
+const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
+  HTMLElement;
+const preview = document.querySelector("#svgPreview") as SVGGraphicsElement &
+  HTMLElement;
+const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
+  HTMLElement;
 const container = document.querySelector("#main") as HTMLElement;
 
 // Set the height and width of the SVG canvas and preview
@@ -53,27 +55,4 @@ const show = (elem: SVGGraphicsElement): void => {
  */
 const hide = (elem: SVGGraphicsElement): void => {
   elem.setAttribute("visibility", "hidden");
-}
-
-/**
- * Function to place the obstacles on the canvas based on the level
- * @param level The current level of the game to determine the obstacles to place
- * @returns An array of SVG elements that are the obstacles
- */
-const placeObstacles = (level: number): SVGElement[] => {
-  const addedObstacles: SVGElement[] = [];
-
-  // Choose the obstacles based on the level
-  Obstacles[(level - 1) % Obstacles.length].map((block) => {
-    const newBlock = createSvgElement(svg.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * block.x}`,
-      y: `${Block.HEIGHT * block.y}`,
-      style: `fill: white`,
-    });
-    svg.appendChild(newBlock);
-    addedObstacles.push(newBlock);
-  });
-  return addedObstacles;
 };
