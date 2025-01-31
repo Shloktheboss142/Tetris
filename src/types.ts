@@ -16,6 +16,7 @@ const Viewport = {
     WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
     HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
   },
+  // Obstacles that will be generated
   Obstacles = [
     [
       { x: 3, y: 6 },
@@ -56,6 +57,7 @@ const Viewport = {
       { x: 9, y: 13 },
     ],
   ],
+  // Block options for the blocks that will be generated
   BlockOptions = [
     // {
     //   blocks: [
@@ -76,47 +78,38 @@ const Viewport = {
       positions: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+      ],
+      color: "#FDDA1D",
+    }, // O
+    {
+      positions: [
+        { x: 2, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+      ],
+      color: "#FF8300",
+    }, // L
+    {
+      positions: [
+        { x: 1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 2, y: 0 },
+      ],
+      color: "#3DCA31",
+    }, // S
+    {
+      positions: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
         { x: 2, y: 0 },
         { x: 3, y: 0 },
       ],
-      color: "cyan",
-    },
-    {
-      positions: [
-        { x: 0, y: 0 },
-        { x: 0, y: 1 },
-        { x: 1, y: 1 },
-        { x: 2, y: 1 },
-      ],
-      color: "blue",
-    },
-    {
-      positions: [
-        { x: 2, y: 0 },
-        { x: 0, y: 1 },
-        { x: 1, y: 1 },
-        { x: 2, y: 1 },
-      ],
-      color: "orange",
-    },
-    {
-      positions: [
-        { x: 0, y: 0 },
-        { x: 1, y: 0 },
-        { x: 0, y: 1 },
-        { x: 1, y: 1 },
-      ],
-      color: "yellow",
-    },
-    {
-      positions: [
-        { x: 1, y: 0 },
-        { x: 0, y: 1 },
-        { x: 1, y: 1 },
-        { x: 2, y: 1 },
-      ],
-      color: "purple",
-    },
+      color: "#21CDFF",
+    }, // I
     {
       positions: [
         { x: 0, y: 0 },
@@ -124,21 +117,32 @@ const Viewport = {
         { x: 1, y: 1 },
         { x: 2, y: 1 },
       ],
-      color: "red",
-    },
+      color: "#EB0045",
+    }, // Z
     {
       positions: [
         { x: 1, y: 0 },
-        { x: 2, y: 0 },
         { x: 0, y: 1 },
         { x: 1, y: 1 },
+        { x: 2, y: 1 },
       ],
-      color: "green",
-    },
+      color: "#B231F0",
+    }, // T
+    {
+      positions: [
+        { x: 0, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+      ],
+      color: "#0F6CF2",
+    }, // J
   ];
 
+// Key type
 type Key = "KeyS" | "KeyA" | "KeyD" | "Space" | "KeyW";
 
+// State type
 type State = Readonly<{
   gameEnd: boolean;
   currentBlock: SVGElement[];
